@@ -15,6 +15,7 @@ import config
 postlist = []
 
 def connect():
+    # Connect to reddit and specify the subreddit to look for posts
     reddit = praw.Reddit(
         client_id=secret.CLIENT_ID,
         client_secret=secret.CLIENT_SECRET,
@@ -49,7 +50,7 @@ def get_post_data(subreddit):
     get_named_entities(df_posts)
 
 def get_named_entities(df_posts):
-    #Get list of named entities which are organizations or stock symbols (MONEY is used since the stock sybols are often preceded by $)
+    # Get list of named entities which are organizations or stock symbols (MONEY is used since the stock sybols are often preceded by $)
     ents = []
     ignore_list = ['GPE', 'DATE', 'TIME', 'NORP', 'LOC', 'PERCENT', 'LANGUAGE', 'ORDINAL', 'WORK_OF_ART', 'CARDINAL']
 
@@ -67,18 +68,18 @@ def get_named_entities(df_posts):
             if i[1] not in ignore_list:
                 ents.append(i[0])
 
-    # makes all entities lower case so they can search as case insensitive
+    # Makes all entities lower case so they can search as case insensitive
     ents = [x.lower() for x in ents]
 
     stock_in_post(ents)
 
 def stock_in_post(ents):
-    #Return stock symbol if company name exists in stock database
+    # Return stock symbol if company name exists in stock database
     df = pd.read_csv('stocks/All_Listings.csv', index_col=False)
+    df = df.dropna()
 
     stock_list = df
     mentioned_stocks = []
-
     for word in ents:
         if stock_list['name'].str.contains(word).any() == True:
             symbol = stock_list[stock_list['name'].str.contains(word)]['symbol'].values[0]
