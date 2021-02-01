@@ -119,5 +119,16 @@ def stock_in_post(ents):
     storedata.store_mentions(mentioned_stocks)
 
 if __name__ == '__main__':
-    connect()
+    while True:
+        try:
+            connect()
+            
+            print('\nSleeping for '+str(config.check_interval/60)+' minutes until next pull')
+            time.sleep(settings.check_interval)
+        except Exception as e:
+            print(e, '\nError! Trying again in 30 seconds..')
+            time.sleep(30)
+            continue
+    
+
     
