@@ -2,6 +2,7 @@
 import os
 import praw
 import pandas as pd
+import time
 from datetime import datetime
 import spacy
 from spacy import displacy
@@ -56,10 +57,10 @@ def new_posts(df_posts):
     if not os.path.exists('data/lastpull.csv'):
         df_posts.to_csv('data/lastpull.csv', index=False)
     else:
-        #BUG Need to append last pull and save it with new pull each time.
+        # Need to append last pull and save it with new pull each time.
         lastpull = pd.read_csv('data/lastpull.csv', parse_dates=['Post Time'])
         df_posts = df_posts[~df_posts['Post Time'].isin(lastpull['Post Time'])].dropna()
-        print('new posts since last pull:')
+        print('New posts since last pull:')
         print(df_posts)
         print('\n')
         lastpull.append(df_posts).to_csv('data/lastpull.csv', index=False)
@@ -91,6 +92,9 @@ def get_named_entities(df_posts):
     removetable = str.maketrans('', '', '@#%[]()\/') 
     ents = [s.translate(removetable) for s in ents] # Removes illegal characters
     ents = [x.lower() for x in ents] # Makes all entities lower case so they can search as case insensitive
+    print('Named entities in these posts: ')
+    print(ents)
+    print('\n')
 
     stock_in_post(ents)
 
@@ -124,7 +128,7 @@ if __name__ == '__main__':
             connect()
             
             print('\nSleeping for '+str(config.check_interval/60)+' minutes until next pull')
-            time.sleep(settings.check_interval)
+            time.sleep(config.check_interval)
         except Exception as e:
             print(e, '\nError! Trying again in 30 seconds..')
             time.sleep(30)
