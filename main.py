@@ -133,6 +133,3 @@ if __name__ == '__main__':
             print(e, '\nError! Trying again in 30 seconds..')
             time.sleep(30)
             continue
-    
-
-    
