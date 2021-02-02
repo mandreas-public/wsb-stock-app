@@ -1,8 +1,21 @@
 #z-score = ([current trend] - [average historic trends]) / [standard deviation of historic trends])
 
-from math import sqrt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.style as style
+from matplotlib.dates import DateFormatter, DayLocator
+from datetime import datetime
+style.available
+style.use('seaborn')
+
+import config
+
+import warnings
+warnings.filterwarnings('ignore')
 
 def get_score_data():
+    # Pull in the mention data
     df = pd.read_csv('data/mentions.csv', parse_dates=['Mention Datetime'])
     df = df.groupby([pd.Grouper(key='Mention Datetime', freq='D'),'Symbol']).sum().reset_index()
     df = df.pivot_table(index='Symbol',
@@ -12,13 +25,14 @@ def get_score_data():
     top_symbols(df)
 
 def top_symbols(df):
+    # Determines the top symbols based on observations greater than variable "t_post_count" in config.py
     all_syms = df['Symbol'].unique()
     top_syms = {}
     top_syms_list = []
 
     for sym in all_syms:
         count = df.loc[df['Symbol'] == sym,['Mention']].sum()
-        if count[0] > 10:
+        if count[0] > config.t_post_count:
             top_syms_list.append(sym)
             top_syms[sym] = df[df['Symbol'] == sym].reset_index()
             top_syms[sym].drop(['index'], axis=1, inplace=True)
@@ -29,39 +43,60 @@ def top_symbols(df):
     is_trending(df, top_syms, top_syms_list)
 
 def is_trending(df, top_syms, top_syms_list):
+    # Uses z score to determine if a stock is trending
     obs = df['Mention']
     trending_stocks = []
 
     for sym in top_syms_list:
-        score = fazscore(0.8, obs).score(top_syms[sym].loc[0][2])
+        mn = np.mean(obs)
+        sd = np.std(obs)
+        i = top_syms[sym].loc[0][2]
+        
+        zscore = (i-mn)/sd
+
         print('\n'+sym)
-        print('Z-Score is: '+str(score))
-        if score > 2:
+        print('Z-Score is: '+str(zscore))
+        if zscore > 1.5:
             print('Stock is Trending!')
-            trending_stocks.append((sym, score))
+            trending_stocks.append(sym)
         else:
             print('Not Trending')
     
-class fazscore:
-    def __init__(self, decay, pop = []):
-        self.sqrAvg = self.avg = 0
-        # The rate at which the historic data's effect will diminish.
-        self.decay = decay
-        for x in pop: self.update(x)
-    def update(self, value):
-        # Set initial averages to the first value in the sequence.
-        if self.avg == 0 and self.sqrAvg == 0:
-            self.avg = float(value)
-            self.sqrAvg = float((value ** 2))
-        # Calculate the average of the rest of the values using a 
-        # floating average.
-        else:
-            self.avg = self.avg * self.decay + value * (1 - self.decay)
-            self.sqrAvg = self.sqrAvg * self.decay + (value ** 2) * (1 - self.decay)
-        return self
-    def std(self):
-        # Somewhat ad-hoc standard deviation calculation.
-        return sqrt(self.sqrAvg - self.avg ** 2)
-    def score(self, obs):
-        if self.std() == 0: return (obs - self.avg) * float("infinity")
-        else: return (obs - self.avg) / self.std()
+    graph_trending(df, top_syms, trending_stocks)
+
+def graph_trending(df, top_syms, trending_stocks):
+    # Graphs the trending stocks and saves image to a file
+    num_plots = len(top_syms)
+    i=0
+
+    avg_all = df[df['Mention'] > 0].mean()
+    avg_all = avg_all[0]
+
+    fig = plt.figure(figsize=(20,40))
+    fig.suptitle('Trending Stock Mention Counts', fontsize=14, weight='bold')
+
+    for sym in trending_stocks:
+        i = i+1
+        x = top_syms[sym]['Mention Datetime']
+        y = round(top_syms[sym]['Mention'],0)
+
+        ax = fig.add_subplot(num_plots,1,i)
+        ax.plot(x,y, color='r')
+        ax.axhline(y=avg_all, color='black')
+        
+        plt.ylabel('# Mentions', fontsize=14)
+        date_form = DateFormatter("%m-%d")
+        ax.xaxis.set_major_formatter(date_form)
+        ax.xaxis.set_major_locator(DayLocator())
+        plt.xticks(rotation=90,fontsize=12)
+        plt.yticks(fontsize=12)
+        ax.legend([sym, 'Avg Mentions of Pop: '+str(round(avg_all, 1))], loc = 'upper left', prop={'size':14})
+        
+    plt.tight_layout()
+    fig.subplots_adjust(top=0.97)
+    figname = str(datetime.today().strftime('%Y-%m-%d'))+'_trendingstocks.png'
+
+    plt.savefig('img/'+figname, bbox_inches='tight')
+    
+if __name__ == '__main__':
+    get_score_data()

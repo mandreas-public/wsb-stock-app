@@ -9,3 +9,7 @@ post_limit = 30
 
 # The subreddit to look for stock mentions in
 sub = 'wallstreetbets'
+
+# First filter to check if a stock is trending
+# The stock must have at least this many mentions in a day to be scored
+t_post_count = 10
