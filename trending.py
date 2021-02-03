@@ -1,5 +1,6 @@
 #z-score = ([current trend] - [average historic trends]) / [standard deviation of historic trends])
 
+import pickle
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,7 +23,7 @@ def get_score_data():
                     columns='Mention Datetime', fill_value=0
                     ).stack().sort_values(by='Symbol').reset_index()
     
-    top_symbols(df)
+    return df 
 
 def top_symbols(df):
     # Determines the top symbols based on observations greater than variable "t_post_count" in config.py
@@ -40,7 +41,7 @@ def top_symbols(df):
     print('The top symbols: ')
     print(top_syms_list)
 
-    is_trending(df, top_syms, top_syms_list)
+    return top_syms, top_syms_list
 
 def is_trending(df, top_syms, top_syms_list):
     # Uses z score to determine if a stock is trending
@@ -62,7 +63,10 @@ def is_trending(df, top_syms, top_syms_list):
         else:
             print('Not Trending')
     
-    graph_trending(df, top_syms, trending_stocks)
+    with open('obj/trendingstocks.pkl', 'wb') as fp:   #Pickling
+        pickle.dump(trending_stocks, fp)
+
+    return trending_stocks
 
 def graph_trending(df, top_syms, trending_stocks):
     # Graphs the trending stocks and saves image to a file
@@ -99,4 +103,9 @@ def graph_trending(df, top_syms, trending_stocks):
     plt.savefig('img/'+figname, bbox_inches='tight')
     
 if __name__ == '__main__':
-    get_score_data()
+    df = get_score_data()
+    top_syms, top_syms_list = top_symbols(df)
+    trending_stocks = is_trending(df, top_syms, top_syms_list)
+    graph_trending(df, top_syms, trending_stocks)
+
+
