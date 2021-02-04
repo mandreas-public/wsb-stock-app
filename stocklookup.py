@@ -2,6 +2,7 @@
 import yfinance as yf
 import pickle
 import pandas as pd
+pd.options.display.float_format = '{:,.2f}'.format
 import matplotlib.pyplot as plt
 import matplotlib.style as style
 from matplotlib.dates import DateFormatter, MonthLocator
@@ -31,15 +32,30 @@ def get_stock_data(trending_stocks):
 
     # Wrangle the data into a better format
     stock_data = stock_data[['stockSymbol','longName','exchange','marketCap','ask']]
+    stock_data.set_index('stockSymbol', inplace=True)
     stock_data['purchasePrice'] = stock_data['ask']
+    stock_data['purchasePrice'] = price_update(stock_data)
     stock_data['$ Gain/Loss'] = stock_data['ask'] - stock_data['purchasePrice']
     stock_data['% Gain/Loss'] = (stock_data['ask'] - stock_data['purchasePrice']) / stock_data['purchasePrice']
-    stock_data.rename(columns={'stockSymbol':'Symbol', 'longName': 'Organization', 
+    print('here')
+    stock_data.rename(columns={'longName': 'Organization', 
                         'exchange': 'Exchange','marketCap': 'Market Cap',
-                        'ask':'Current Price', 'purchasePrice': 'Purchase Price'}, inplace=True)
-    stock_data.set_index('Symbol', inplace=True)
+                        'ask':'Current Price', 'purchasePrice': 'Purchase Price'}, index={'stockSymbol': 'Symbol'}, inplace=True)
+
     print(stock_data)
     return stock_data, hist_data
+
+def price_update(stock_data):
+    datetrending = pd.read_csv('data/datetrending.csv', index_col = 'Symbol') 
+    
+    for row in stock_data.index:
+        if pd.isnull(datetrending.loc[row,'BuyPrice']):
+            datetrending.loc[row,'BuyPrice'] = stock_data.loc[row,'purchasePrice']
+        stock_data.loc[row,'purchasePrice'] = datetrending.loc[row,'BuyPrice']
+
+    datetrending.to_csv('data/datetrending.csv', index=True)
+
+    return stock_data['purchasePrice']
 
 def graph_stock_data(trending_stocks, stock_data, hist_data):
     #Graphs the trending stock data historicals
@@ -55,7 +71,6 @@ def graph_stock_data(trending_stocks, stock_data, hist_data):
         y = hist_data[stock]['Open']
         p_price = stock_data.loc[stock,'Purchase Price']
         
-
         ax = fig.add_subplot(num_plots,1,i)
         ax.plot(x,y, color='r')
         ax.axhline(y=p_price, color='black')
@@ -70,9 +85,11 @@ def graph_stock_data(trending_stocks, stock_data, hist_data):
         ax.xaxis.tick_top()
 
     #table at the bottom
-    cell_text = []
+    cell_text = [] 
+    cell_text = ["%{:,.2f}" % member for member in cell_text]
     for row in range(len(stock_data)):
         cell_text.append(stock_data.iloc[row])
+
     table = ax.table(cellText=cell_text,
                         colLabels=stock_data.columns,
                         rowLabels=stock_data.index,

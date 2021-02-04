@@ -1,5 +1,6 @@
 #z-score = ([current trend] - [average historic trends]) / [standard deviation of historic trends])
 
+import os
 import pickle
 import pandas as pd
 import numpy as np
@@ -21,7 +22,7 @@ def get_score_data():
     df = df.groupby([pd.Grouper(key='Mention Datetime', freq='D'),'Symbol']).sum().reset_index()
     df = df.pivot_table(index='Symbol',
                     columns='Mention Datetime', fill_value=0
-                    ).stack().sort_values(by='Symbol').reset_index()
+                    ).stack().sort_values(by=['Symbol','Mention Datetime']).reset_index()
     
     return df 
 
@@ -52,6 +53,7 @@ def is_trending(df, top_syms, top_syms_list):
         mn = np.mean(obs)
         sd = np.std(obs)
         i = top_syms[sym].loc[0][2]
+        print(i)
         
         zscore = (i-mn)/sd
 
@@ -68,6 +70,29 @@ def is_trending(df, top_syms, top_syms_list):
 
     return trending_stocks
 
+def new_trending(trending_stocks):
+    if not os.path.exists('data/datetrending.csv'):
+        newtrend = pd.DataFrame(trending_stocks, columns = ['Symbol'])
+        newtrend['First Trending'] = datetime.today().strftime('%Y-%m-%d')
+        newtrend['BuyPrice'] = np.NaN
+        newtrend.set_index('Symbol', inplace=True)
+        newtrend.to_csv('data/datetrending.csv', index=True)
+        print('New trending stocks:')
+        print(newtrend)
+    else:
+        oldtrend = pd.read_csv('data/datetrending.csv', parse_dates=['First Trending'], index_col='Symbol')
+        temp = pd.DataFrame(trending_stocks, columns = ['Symbol'])
+        temp['First Trending'] = datetime.today().strftime('%Y-%m-%d')
+        temp['BuyPrice'] = np.NaN
+        temp.set_index('Symbol', inplace=True)
+        newtrend = pd.concat([oldtrend,temp])
+        newtrend = newtrend[~newtrend.index.duplicated(keep='first')]
+        newtrend['First Trending'] = pd.to_datetime(newtrend['First Trending'], format='%Y-%m-%d')
+        print('New trending stocks:')
+        print(newtrend)
+        print('\n')
+        newtrend.to_csv('data/datetrending.csv', index=True)
+
 def graph_trending(df, top_syms, trending_stocks):
     # Graphs the trending stocks and saves image to a file
     num_plots = len(top_syms)
@@ -83,6 +108,7 @@ def graph_trending(df, top_syms, trending_stocks):
         i = i+1
         x = top_syms[sym]['Mention Datetime']
         y = round(top_syms[sym]['Mention'],0)
+        
 
         ax = fig.add_subplot(num_plots,1,i)
         ax.plot(x,y, color='r')
@@ -106,6 +132,7 @@ if __name__ == '__main__':
     df = get_score_data()
     top_syms, top_syms_list = top_symbols(df)
     trending_stocks = is_trending(df, top_syms, top_syms_list)
+    new_trending(trending_stocks)
     graph_trending(df, top_syms, trending_stocks)
 
 
