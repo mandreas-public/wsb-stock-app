@@ -36,20 +36,17 @@
 # How to Setup
 - Ensure you are using Python 3.7 or newer (installed on the system)
 - In Windows open a cmd window and type "cd [path to where you saved the project]" Example: cd "C:\Users\Bob\app-wsb-stock-mentions"
-- Next step is optional but recommend creating a virtual environment for the program by typing "python -m venv [whatever_you_wanna_call_your_virtualenv]"
-- If you created a virtual environment for the app then in the same cmd window type ".\\[whatever_you_called_your_virtualenv]\Scripts\activate"
-- If you successfully activated your virtual env the window should now show ([whatever_you_called_your_virtualenv]) at the beginning of the line.
 - Next install the requirements.txt file by typing "pip install -r requirements.txt"
 
 # How to Use
-- With your virtual environment activated and after you have navigated to the folder where main.py exits type "python main.py"
+- With your cmd window open and after you have navigated to the folder where main.py exits type "python main.py"
     - If you were successful you should see output from the Reddit post scrape, the named entities found in the posts and the stocks they are represented by.
     - You can leave the program to run and collect data as it is set to pull new posts every 20 minutes by default.
-- Once you have collected some data you can run the trending.py file (type "python trending.py") in a cmd window with your virtual environment activated.
+- Once you have collected some data you can run the trending.py file (type "python trending.py") in a cmd window.
     - This will determine if a stock is trending and graph the saved data by calendar day (you will need to run the program for several days for it to be effective).
     - Output graphs are saved to the /img folder.
 - You can then run the stocklookup.py file to get the stock data for any trending stocks.  If this is the first time you've looked up a stock it will "buy" the stock and save that price.  This is a fun way to see if you'd actually connected your trading account to this process if you'd have made any money!
-    - Graphs of the stock history will be saved to the /img file with some fun gain data.  
+    - Graphs of the stock history will be saved to the /img file with some gain data.  
 
 # Change Log
 - Feb 3, 2021: First version complete.
